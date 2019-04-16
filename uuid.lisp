@@ -7,6 +7,7 @@
 (cl:defpackage :uuid
   (:use :common-lisp)
   (:export :uuid :*ticks-per-count* :format-as-urn :make-null-uuid :make-uuid-from-string
+	   :make-uuid-from-string*
 	   :make-v1-uuid :make-v3-uuid :make-v4-uuid :make-v5-uuid :uuid=
 	   :+namespace-dns+ :+namespace-url+ :+namespace-oid+ :+namespace-x500+
 	   :print-bytes :uuid-to-byte-array :byte-array-to-uuid))
@@ -81,6 +82,26 @@ characters.~@:>" string (length string)))
 		   :clock-seq-var (parse-block string 19 21)
 		   :clock-seq-low (parse-block string 21 23)
 		   :node          (parse-block string 24 36))))
+
+(defun make-uuid-from-string* (string)
+  "Creates an uuid from the string represenation of an uuid.
+  (example input string 6ba7b810-9dad-11d1-80b4-00c04fd430c8)
+
+  Return NIL if the STRING could not be parsed."
+  (when (and (= (length string) 36)
+	     (eq (aref string  8) #\-)
+	     (eq (aref string 13) #\-)
+	     (eq (aref string 18) #\-)
+	     (eq (aref string 23) #\-))
+    (labels ((parse-block (string start end)
+	       (parse-integer string :start start :end end :radix 16)))
+      (make-instance 'uuid
+		     :time-low      (parse-block string  0 8)
+		     :time-mid      (parse-block string  9 13)
+		     :time-high     (parse-block string 14 18)
+		     :clock-seq-var (parse-block string 19 21)
+		     :clock-seq-low (parse-block string 21 23)
+		     :node          (parse-block string 24 36)))))
 
 (defparameter +namespace-dns+ (make-uuid-from-string "6ba7b810-9dad-11d1-80b4-00c04fd430c8")
   "The DNS Namespace. Can be used for the generation of uuids version 3 and 5")
